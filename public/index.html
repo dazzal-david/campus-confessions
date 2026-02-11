@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Campus Confessions</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f5f5f5;
+            color: #0f1419;
+            min-height: 100vh;
+        }
+
+        /* ── Layout ─────────────────────────────────── */
+        .timeline {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fff;
+            min-height: 100vh;
+            border-left: 1px solid #eff3f4;
+            border-right: 1px solid #eff3f4;
+        }
+
+        /* ── Header ─────────────────────────────────── */
+        .top-bar {
+            position: sticky;
+            top: 0;
+            background: rgba(255,255,255,0.85);
+            backdrop-filter: blur(12px);
+            z-index: 50;
+            border-bottom: 1px solid #eff3f4;
+        }
+        .top-bar-inner {
+            padding: 12px 16px;
+        }
+        .top-bar h1 {
+            font-size: 1.25em;
+            font-weight: 700;
+        }
+        .top-bar .subtitle {
+            font-size: 0.8em;
+            color: #536471;
+            font-weight: 400;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #eff3f4;
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 14px 0;
+            font-size: 0.9em;
+            font-weight: 500;
+            color: #536471;
+            cursor: pointer;
+            position: relative;
+            transition: background 0.2s;
+            border: none;
+            background: none;
+            font-family: inherit;
+        }
+        .tab:hover { background: #f7f7f7; }
+        .tab.active { color: #0f1419; font-weight: 700; }
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 56px;
+            height: 4px;
+            background: #e0446d;
+            border-radius: 2px;
+        }
+
+        /* ── Compose ────────────────────────────────── */
+        .compose {
+            padding: 12px 16px;
+            border-bottom: 1px solid #eff3f4;
+            display: flex;
+            gap: 12px;
+        }
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+            font-weight: 700;
+            color: #fff;
+        }
+        .avatar.compose-avatar { background: #e0446d; }
+
+        .compose-body { flex: 1; min-width: 0; }
+        .compose textarea {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-family: inherit;
+            font-size: 1.15em;
+            resize: none;
+            min-height: 52px;
+            color: #0f1419;
+            line-height: 1.4;
+        }
+        .compose textarea::placeholder { color: #9aa3ad; }
+
+        .compose-moods {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            padding: 8px 0 4px;
+        }
+        .mood-chip {
+            padding: 3px 10px;
+            border-radius: 14px;
+            border: 1px solid #e0e0e0;
+            font-size: 0.78em;
+            cursor: pointer;
+            transition: all 0.15s;
+            background: #fff;
+            color: #536471;
+        }
+        .mood-chip:hover { background: #f7f7f7; }
+        .mood-chip.selected {
+            background: #fde8ee;
+            border-color: #e0446d;
+            color: #e0446d;
+        }
+
+        .compose-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 10px;
+            border-top: 1px solid #eff3f4;
+        }
+        .compose-left { display: flex; align-items: center; gap: 12px; }
+
+        /* Circular char counter */
+        .char-ring {
+            width: 28px;
+            height: 28px;
+            position: relative;
+        }
+        .char-ring svg { transform: rotate(-90deg); }
+        .char-ring circle {
+            fill: none;
+            stroke-width: 2.5;
+        }
+        .char-ring .bg { stroke: #eff3f4; }
+        .char-ring .fill { stroke: #e0446d; transition: stroke-dashoffset 0.2s, stroke 0.2s; }
+        .char-ring .fill.warn { stroke: #ffc107; }
+        .char-ring .fill.limit { stroke: #f44336; }
+        .char-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%,-50%);
+            font-size: 0.55em;
+            color: #536471;
+            font-weight: 600;
+        }
+
+        .post-btn {
+            padding: 8px 20px;
+            background: #e0446d;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.88em;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            font-family: inherit;
+        }
+        .post-btn:hover { opacity: 0.85; }
+        .post-btn:disabled { opacity: 0.5; cursor: default; }
+
+        /* ── Post Card ──────────────────────────────── */
+        .post {
+            display: flex;
+            gap: 12px;
+            padding: 12px 16px;
+            border-bottom: 1px solid #eff3f4;
+            transition: background 0.15s;
+            animation: fadeIn 0.3s ease;
+        }
+        .post:hover { background: #f8f8f8; }
+
+        .post-body { flex: 1; min-width: 0; }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 2px;
+        }
+        .post-name {
+            font-weight: 700;
+            font-size: 0.92em;
+        }
+        .post-handle {
+            color: #536471;
+            font-size: 0.85em;
+        }
+        .post-dot {
+            color: #536471;
+            font-size: 0.7em;
+        }
+        .post-time {
+            color: #536471;
+            font-size: 0.85em;
+        }
+
+        .post-mood {
+            display: inline-block;
+            font-size: 0.73em;
+            padding: 1px 8px;
+            border-radius: 10px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+        .m-love { background: #fde8ee; color: #e0446d; }
+        .m-happy { background: #fff8e1; color: #f9a825; }
+        .m-sad { background: #e3f2fd; color: #1976d2; }
+        .m-angry { background: #fbe9e7; color: #d84315; }
+        .m-anxious { background: #f3e5f5; color: #8e24aa; }
+        .m-excited { background: #e8f5e9; color: #2e7d32; }
+
+        .post-text {
+            font-size: 0.95em;
+            line-height: 1.55;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+        }
+
+        /* Emoji reactions row (below text) */
+        .post-reactions {
+            display: flex;
+            gap: 4px;
+            margin-top: 8px;
+            flex-wrap: wrap;
+        }
+        .emoji-btn {
+            width: 32px;
+            height: 28px;
+            border-radius: 14px;
+            border: 1px solid #eff3f4;
+            background: #fff;
+            cursor: pointer;
+            font-size: 0.85em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            transition: all 0.15s;
+            color: #536471;
+        }
+        .emoji-btn:hover { background: #fde8ee; border-color: #e0446d; transform: scale(1.1); }
+        .emoji-btn.reacted { background: #fde8ee; border-color: #e0446d; }
+        .emoji-btn .e-count {
+            font-size: 0.7em;
+            font-weight: 600;
+        }
+
+        /* Action bar (reply, repost, like, bookmark) */
+        .actions {
+            display: flex;
+            justify-content: space-between;
+            max-width: 400px;
+            margin-top: 8px;
+        }
+        .action {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 0.82em;
+            color: #536471;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .action svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+        .action:hover.reply-action { color: #1d9bf0; background: rgba(29,155,240,0.1); }
+        .action:hover.repost-action { color: #00ba7c; background: rgba(0,186,124,0.1); }
+        .action:hover.like-action { color: #f91880; background: rgba(249,24,128,0.1); }
+        .action:hover.bookmark-action { color: #1d9bf0; background: rgba(29,155,240,0.1); }
+        .action.liked { color: #f91880; }
+        .action.liked svg { fill: #f91880; stroke: #f91880; }
+        .action.reposted { color: #00ba7c; }
+        .action.bookmarked { color: #1d9bf0; }
+        .action.bookmarked svg { fill: #1d9bf0; }
+        .action span { font-size: 0.95em; }
+
+        /* ── Replies ────────────────────────────────── */
+        .replies-section {
+            display: none;
+            padding: 0 0 8px;
+        }
+        .replies-section.open { display: block; }
+
+        .reply {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0 10px 52px;
+            border-top: 1px solid #eff3f4;
+        }
+        .reply-avatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #536471;
+            color: #fff;
+            font-size: 0.65em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-weight: 700;
+        }
+        .reply-body { flex: 1; min-width: 0; }
+        .reply-name { font-weight: 600; font-size: 0.82em; }
+        .reply-handle { color: #536471; font-size: 0.78em; }
+        .reply-text { font-size: 0.88em; line-height: 1.45; margin-top: 2px; }
+        .reply-time { font-size: 0.72em; color: #536471; margin-top: 2px; }
+
+        .reply-compose {
+            display: flex;
+            gap: 10px;
+            padding: 10px 0 4px 52px;
+            border-top: 1px solid #eff3f4;
+            align-items: center;
+        }
+        .reply-compose input {
+            flex: 1;
+            border: 1px solid #eff3f4;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 0.85em;
+            outline: none;
+            font-family: inherit;
+            color: #0f1419;
+        }
+        .reply-compose input:focus { border-color: #e0446d; }
+        .reply-compose input::placeholder { color: #9aa3ad; }
+        .reply-compose button {
+            padding: 6px 16px;
+            background: #e0446d;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            font-weight: 700;
+            font-size: 0.8em;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .reply-compose button:hover { opacity: 0.85; }
+
+        /* ── Empty State ────────────────────────────── */
+        .empty {
+            text-align: center;
+            padding: 80px 20px;
+            color: #9aa3ad;
+        }
+        .empty .icon { font-size: 2.5em; margin-bottom: 10px; }
+        .empty p { font-size: 0.92em; }
+        .empty b { color: #0f1419; }
+
+        /* ── Toast ──────────────────────────────────── */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(80px);
+            background: #e0446d;
+            color: #fff;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            font-weight: 600;
+            opacity: 0;
+            transition: all 0.25s ease;
+            z-index: 100;
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="timeline">
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-inner">
+            <h1>Campus Confessions <span class="subtitle" id="count"></span></h1>
+        </div>
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('recent', this)">For You</button>
+            <button class="tab" onclick="switchTab('top', this)">Trending</button>
+        </div>
+    </div>
+
+    <!-- Compose -->
+    <div class="compose">
+        <div class="avatar compose-avatar">?</div>
+        <div class="compose-body">
+            <textarea id="input" placeholder="What's happening on campus?" maxlength="280" rows="2"></textarea>
+            <div class="compose-moods" id="moods">
+                <span class="mood-chip" data-mood="love" onclick="pickMood(this)">&#10084;&#65039; love</span>
+                <span class="mood-chip" data-mood="happy" onclick="pickMood(this)">&#128522; happy</span>
+                <span class="mood-chip" data-mood="sad" onclick="pickMood(this)">&#128546; sad</span>
+                <span class="mood-chip" data-mood="angry" onclick="pickMood(this)">&#128545; angry</span>
+                <span class="mood-chip" data-mood="anxious" onclick="pickMood(this)">&#128560; anxious</span>
+                <span class="mood-chip" data-mood="excited" onclick="pickMood(this)">&#128293; excited</span>
+            </div>
+            <div class="compose-footer">
+                <div class="compose-left">
+                    <div class="char-ring" id="charRing">
+                        <svg width="28" height="28" viewBox="0 0 28 28">
+                            <circle class="bg" cx="14" cy="14" r="11" />
+                            <circle class="fill" cx="14" cy="14" r="11" stroke-dasharray="69.12" stroke-dashoffset="69.12" />
+                        </svg>
+                    </div>
+                </div>
+                <button class="post-btn" id="postBtn" onclick="createPost()" disabled>Post</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feed -->
+    <div id="feed"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '/api/posts';
+const MAX = 280;
+const CIRCUMFERENCE = 2 * Math.PI * 11; // ~69.12
+
+const input = document.getElementById('input');
+const postBtn = document.getElementById('postBtn');
+const fillCircle = document.querySelector('.char-ring .fill');
+
+let mood = 'none';
+let sort = 'recent';
+const liked = new Set();
+const reposted = new Set();
+const bookmarked = new Set();
+const reacted = {}; // { postId: Set<type> }
+
+// ── Anonymous identity from post id ───────────────
+
+const ANIMALS = ['Panda','Fox','Owl','Cat','Wolf','Bear','Deer','Hawk','Lynx','Dove','Swan','Crow','Frog','Duck','Seal'];
+const COLORS = ['#e0446d','#1d9bf0','#00ba7c','#f9a825','#8e24aa','#d84315','#536471','#0d47a1','#ad1457','#2e7d32'];
+
+function anonName(id) { return 'Anon ' + ANIMALS[id % ANIMALS.length]; }
+function anonHandle(id) { return '@anon' + id; }
+function anonColor(id) { return COLORS[id % COLORS.length]; }
+function anonInitial(id) { return ANIMALS[id % ANIMALS.length][0]; }
+
+// ── Mood config ───────────────────────────────────
+
+const MOOD_MAP = {
+    love:    { label: '&#10084;&#65039; love',    cls: 'm-love' },
+    happy:   { label: '&#128522; happy',   cls: 'm-happy' },
+    sad:     { label: '&#128546; sad',     cls: 'm-sad' },
+    angry:   { label: '&#128545; angry',   cls: 'm-angry' },
+    anxious: { label: '&#128560; anxious', cls: 'm-anxious' },
+    excited: { label: '&#128293; excited', cls: 'm-excited' }
+};
+
+const EMOJIS = [
+    { type: 'love',  icon: '&#10084;&#65039;' },
+    { type: 'haha',  icon: '&#128514;' },
+    { type: 'sad',   icon: '&#128546;' },
+    { type: 'angry', icon: '&#128545;' },
+    { type: 'fire',  icon: '&#128293;' }
+];
+
+// ── Mood picker ───────────────────────────────────
+
+function pickMood(el) {
+    const m = el.dataset.mood;
+    if (mood === m) {
+        mood = 'none';
+        el.classList.remove('selected');
+    } else {
+        document.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+        mood = m;
+    }
+}
+
+// ── Character ring ────────────────────────────────
+
+input.addEventListener('input', () => {
+    const len = input.value.length;
+    const pct = len / MAX;
+    fillCircle.style.strokeDashoffset = CIRCUMFERENCE * (1 - pct);
+    fillCircle.className.baseVal = 'fill' + (pct > 0.9 ? (pct >= 1 ? ' limit' : ' warn') : '');
+    postBtn.disabled = len === 0 || len > MAX;
+    // Auto-resize textarea
+    input.style.height = 'auto';
+    input.style.height = input.scrollHeight + 'px';
+});
+
+input.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter' && !postBtn.disabled) {
+        e.preventDefault();
+        createPost();
+    }
+});
+
+// ── Tabs ──────────────────────────────────────────
+
+function switchTab(s, btn) {
+    sort = s;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    loadPosts();
+}
+
+// ── Helpers ───────────────────────────────────────
+
+function timeAgo(ts) {
+    const s = Math.floor((Date.now() - new Date(ts + 'Z')) / 1000);
+    if (s < 60) return 'now';
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + 'm';
+    const h = Math.floor(m / 60);
+    if (h < 24) return h + 'h';
+    const d = Math.floor(h / 24);
+    if (d < 7) return d + 'd';
+    return new Date(ts + 'Z').toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function esc(t) {
+    const d = document.createElement('div');
+    d.textContent = t;
+    return d.innerHTML;
+}
+
+function fmtCount(n) { return n > 0 ? n : ''; }
+
+// ── SVG Icons ─────────────────────────────────────
+
+const ICON = {
+    reply:    '<svg viewBox="0 0 24 24"><path d="M1.751 10c0-4.42 3.584-8 8.005-8h4.366c4.49 0 8.129 3.64 8.129 8.13 0 2.25-.893 4.34-2.457 5.86l-4.91 4.77a.75.75 0 01-1.134-.506l-.27-1.874a.75.75 0 01.476-.795C16.57 16.57 18.5 14.5 18.5 12c0-2.76-2.24-5-5-5H10c-2.76 0-5 2.24-5 5v.5c0 .28-.22.5-.5.5H2.25a.5.5 0 01-.5-.5V10z"/></svg>',
+    repost:   '<svg viewBox="0 0 24 24"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2h4v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H12.5V4h4c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/></svg>',
+    like:     '<svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C10.001 6.01 8.534 5.44 7.303 5.5c-1.533.09-2.904 1.04-3.49 2.64-.587 1.6-.235 3.46 1.098 5.22 1.333 1.76 3.524 3.59 6.09 5.24 2.564-1.65 4.756-3.48 6.089-5.24 1.333-1.76 1.685-3.62 1.098-5.22-.586-1.6-1.957-2.55-3.49-2.64z"/></svg>',
+    bookmark: '<svg viewBox="0 0 24 24"><path d="M4 4.5C4 3.12 5.119 2 6.5 2h11C18.881 2 20 3.12 20 4.5v18.44l-8-5.71-8 5.71V4.5z"/></svg>'
+};
+
+// ── Load Posts ────────────────────────────────────
+
+async function loadPosts() {
+    try {
+        const res = await fetch(`${API}?sort=${sort}`);
+        const posts = await res.json();
+        const feed = document.getElementById('feed');
+        document.getElementById('count').textContent = posts.length ? `\u00b7 ${posts.length} posts` : '';
+
+        if (!posts.length) {
+            feed.innerHTML = '<div class="empty"><div class="icon">&#128172;</div><p><b>No confessions yet.</b><br>Be the first to post.</p></div>';
+            return;
+        }
+
+        feed.innerHTML = posts.map(p => {
+            const moodHtml = p.mood && p.mood !== 'none' && MOOD_MAP[p.mood]
+                ? `<span class="post-mood ${MOOD_MAP[p.mood].cls}">${MOOD_MAP[p.mood].label}</span>` : '';
+
+            const emojisHtml = EMOJIS.map(e => {
+                const c = (p.reactions && p.reactions[e.type]) || 0;
+                const done = reacted[p.id] && reacted[p.id].has(e.type);
+                return `<button class="emoji-btn ${done ? 'reacted' : ''}" onclick="react(${p.id},'${e.type}',this)">${e.icon}${c ? '<span class="e-count">'+c+'</span>' : ''}</button>`;
+            }).join('');
+
+            return `
+            <div class="post" id="post-${p.id}">
+                <div class="avatar" style="background:${anonColor(p.id)}">${anonInitial(p.id)}</div>
+                <div class="post-body">
+                    <div class="post-header">
+                        <span class="post-name">${anonName(p.id)}</span>
+                        <span class="post-handle">${anonHandle(p.id)}</span>
+                        <span class="post-dot">&middot;</span>
+                        <span class="post-time">${timeAgo(p.timestamp)}</span>
+                    </div>
+                    ${moodHtml}
+                    <div class="post-text">${esc(p.text)}</div>
+                    <div class="post-reactions">${emojisHtml}</div>
+                    <div class="actions">
+                        <button class="action reply-action" onclick="toggleReplies(${p.id})">
+                            ${ICON.reply} <span>${fmtCount(p.reply_count)}</span>
+                        </button>
+                        <button class="action repost-action ${reposted.has(p.id)?'reposted':''}" onclick="doRepost(${p.id},this)">
+                            ${ICON.repost} <span>${fmtCount(p.reposts)}</span>
+                        </button>
+                        <button class="action like-action ${liked.has(p.id)?'liked':''}" onclick="doLike(${p.id},this)">
+                            ${ICON.like} <span>${fmtCount(p.likes)}</span>
+                        </button>
+                        <button class="action bookmark-action ${bookmarked.has(p.id)?'bookmarked':''}" onclick="doBookmark(${p.id},this)">
+                            ${ICON.bookmark}
+                        </button>
+                    </div>
+                    <div class="replies-section" id="replies-${p.id}">
+                        <div id="replies-list-${p.id}"></div>
+                        <div class="reply-compose">
+                            <input type="text" id="reply-input-${p.id}" placeholder="Post your reply" maxlength="280" onkeydown="if(event.key==='Enter')sendReply(${p.id})" />
+                            <button onclick="sendReply(${p.id})">Reply</button>
+                        </div>
+                    </div>
+                </div>
+            </div>`;
+        }).join('');
+    } catch (e) {
+        console.error('Load failed:', e);
+    }
+}
+
+// ── Create Post ───────────────────────────────────
+
+async function createPost() {
+    const text = input.value.trim();
+    if (!text) return;
+    postBtn.disabled = true;
+    try {
+        await fetch(API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, mood })
+        });
+        input.value = '';
+        input.style.height = 'auto';
+        fillCircle.style.strokeDashoffset = CIRCUMFERENCE;
+        fillCircle.className.baseVal = 'fill';
+        mood = 'none';
+        document.querySelectorAll('.mood-chip').forEach(c => c.classList.remove('selected'));
+        toast('Posted!');
+        loadPosts();
+    } catch (e) { toast('Failed to post'); }
+}
+
+// ── Like ──────────────────────────────────────────
+
+async function doLike(id, btn) {
+    if (liked.has(id)) return;
+    liked.add(id);
+    btn.classList.add('liked');
+    try {
+        const res = await fetch(`${API}/${id}/like`, { method: 'POST' });
+        const data = await res.json();
+        btn.querySelector('span').textContent = fmtCount(data.likes);
+    } catch (e) {
+        liked.delete(id);
+        btn.classList.remove('liked');
+    }
+}
+
+// ── Repost ────────────────────────────────────────
+
+async function doRepost(id, btn) {
+    if (reposted.has(id)) return;
+    reposted.add(id);
+    btn.classList.add('reposted');
+    try {
+        const res = await fetch(`${API}/${id}/repost`, { method: 'POST' });
+        const data = await res.json();
+        btn.querySelector('span').textContent = fmtCount(data.reposts);
+        toast('Reposted!');
+    } catch (e) {
+        reposted.delete(id);
+        btn.classList.remove('reposted');
+    }
+}
+
+// ── Bookmark (client-side only) ───────────────────
+
+function doBookmark(id, btn) {
+    if (bookmarked.has(id)) {
+        bookmarked.delete(id);
+        btn.classList.remove('bookmarked');
+        toast('Removed from bookmarks');
+    } else {
+        bookmarked.add(id);
+        btn.classList.add('bookmarked');
+        toast('Added to bookmarks');
+    }
+}
+
+// ── Reactions ─────────────────────────────────────
+
+async function react(id, type, btn) {
+    if (!reacted[id]) reacted[id] = new Set();
+    if (reacted[id].has(type)) return;
+    reacted[id].add(type);
+    btn.classList.add('reacted');
+    try {
+        const res = await fetch(`${API}/${id}/react`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type })
+        });
+        const data = await res.json();
+        const c = (data.reactions && data.reactions[type]) || 0;
+        const countEl = btn.querySelector('.e-count');
+        if (countEl) countEl.textContent = c;
+        else if (c) btn.insertAdjacentHTML('beforeend', `<span class="e-count">${c}</span>`);
+    } catch (e) {
+        reacted[id].delete(type);
+        btn.classList.remove('reacted');
+    }
+}
+
+// ── Replies ───────────────────────────────────────
+
+function toggleReplies(id) {
+    const sec = document.getElementById(`replies-${id}`);
+    if (sec.classList.contains('open')) { sec.classList.remove('open'); return; }
+    sec.classList.add('open');
+    fetchReplies(id);
+}
+
+async function fetchReplies(id) {
+    try {
+        const res = await fetch(`${API}/${id}/replies`);
+        const replies = await res.json();
+        const list = document.getElementById(`replies-list-${id}`);
+        if (!replies.length) {
+            list.innerHTML = '<div style="padding:10px 0 0 52px;color:#9aa3ad;font-size:0.85em;">No replies yet</div>';
+        } else {
+            list.innerHTML = replies.map(r => `
+                <div class="reply">
+                    <div class="reply-avatar">${anonInitial(r.id)}</div>
+                    <div class="reply-body">
+                        <span class="reply-name">${anonName(r.id)}</span>
+                        <span class="reply-handle">${anonHandle(r.id)}</span>
+                        <div class="reply-text">${esc(r.text)}</div>
+                        <div class="reply-time">${timeAgo(r.timestamp)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (e) { console.error(e); }
+}
+
+async function sendReply(id) {
+    const inp = document.getElementById(`reply-input-${id}`);
+    const text = inp.value.trim();
+    if (!text) return;
+    try {
+        await fetch(`${API}/${id}/reply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text })
+        });
+        inp.value = '';
+        await fetchReplies(id);
+        // Update reply count in action bar
+        const res = await fetch(`${API}/${id}/replies`);
+        const replies = await res.json();
+        const postEl = document.getElementById(`post-${id}`);
+        const replyBtn = postEl.querySelector('.reply-action span');
+        replyBtn.textContent = fmtCount(replies.length);
+        toast('Reply posted!');
+    } catch (e) { toast('Failed to reply'); }
+}
+
+// ── Toast ─────────────────────────────────────────
+
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+// ── Init ──────────────────────────────────────────
+loadPosts();
+</script>
+</body>
+</html>
